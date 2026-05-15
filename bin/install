@@ -4,7 +4,7 @@ set -e
 # Install script for ai-skills
 # Builds skills and generates the registry
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." > /dev/null 2>&1 && pwd )"
 SKILLS_DIR="$REPO_ROOT/skills"
 DIST_DIR="$REPO_ROOT/dist"
 REGISTRY_FILE="$REPO_ROOT/skills.json"
@@ -22,15 +22,26 @@ registry='{"skills": []}'
 for skill_dir in "$SKILLS_DIR"/*; do
   if [ -d "$skill_dir" ] && [ -f "$skill_dir/SKILL.md" ]; then
     skill_name=$(basename "$skill_dir")
-    skill_md=$(cat "$skill_dir/SKILL.md")
+    skill_file="$skill_dir/SKILL.md"
 
-    # Extract metadata from SKILL.md (assumes YAML frontmatter)
-    # This is a simplified version - you may want a more robust parser
+    # Extract name from frontmatter (between --- markers)
+    name=$(sed -n '/^name:/{s/^name:[[:space:]]*//; s/[[:space:]]*$//; p;}' "$skill_file" | head -1)
 
+    # Extract description from frontmatter
+    description=$(sed -n '/^description:/{s/^description:[[:space:]]*//; s/[[:space:]]*$//; p;}' "$skill_file" | head -1)
+
+    # Use skill_name if name not found in frontmatter
+    if [ -z "$name" ]; then
+      name="$skill_name"
+    fi
+
+    # Create registry entry using jq (use relative path)
+    relative_path="skills/${skill_name}/SKILL.md"
     registry=$(jq \
-      --arg name "$skill_name" \
-      --arg path "$skill_dir/SKILL.md" \
-      '.skills += [{name: $name, path: $path}]' \
+      --arg name "$name" \
+      --arg description "$description" \
+      --arg path "$relative_path" \
+      '.skills += [{name: $name, description: $description, path: $path}]' \
       <<< "$registry")
   fi
 done
@@ -45,4 +56,4 @@ cp -r "$SKILLS_DIR" "$DIST_DIR/" 2>/dev/null || true
 echo "✓ Installation complete"
 echo ""
 echo "Available skills:"
-jq -r '.skills[] | "  - \(.name)"' "$REGISTRY_FILE"
+jq -r '.skills[] | "  - \(.name): \(.description)"' "$REGISTRY_FILE"
