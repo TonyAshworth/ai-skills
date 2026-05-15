@@ -1,0 +1,18 @@
+{
+  "customSkills": {
+    "enabled": true,
+    "registries": [
+      {
+        "name": "Personal AI Skills",
+        "url": "https://github.com/TonyAshworth/ai-skills",
+        "registryFile": "skills.json",
+        "description": "Tony's personal collection of AI skills"
+      }
+    ]
+  },
+  "skillDiscovery": {
+    "searchPaths": [
+      "https://raw.githubusercontent.com/TonyAshworth/ai-skills/main/skills.json"
+    ]
+  }
+}
