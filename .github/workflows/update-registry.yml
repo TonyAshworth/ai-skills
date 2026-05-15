@@ -1,0 +1,34 @@
+name: Update Skills Registry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+  workflow_dispatch:
+
+jobs:
+  update-registry:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate skills registry
+        run: |
+          cd ${{ github.workspace }}
+          bin/install
+
+      - name: Commit registry if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet skills.json; then
+            echo "No changes to registry"
+          else
+            git add skills.json
+            git commit -m "chore: update skills registry"
+            git push
+          fi

@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+
+# Install script for ai-skills
+# Builds skills and generates the registry
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SKILLS_DIR="$REPO_ROOT/skills"
+DIST_DIR="$REPO_ROOT/dist"
+REGISTRY_FILE="$REPO_ROOT/skills.json"
+
+# Create dist directory
+mkdir -p "$DIST_DIR"
+
+# Generate registry by scanning skills directory
+echo "Generating skills registry..."
+
+# Start with an empty array
+registry='{"skills": []}'
+
+# Process each skill directory
+for skill_dir in "$SKILLS_DIR"/*; do
+  if [ -d "$skill_dir" ] && [ -f "$skill_dir/SKILL.md" ]; then
+    skill_name=$(basename "$skill_dir")
+    skill_md=$(cat "$skill_dir/SKILL.md")
+
+    # Extract metadata from SKILL.md (assumes YAML frontmatter)
+    # This is a simplified version - you may want a more robust parser
+
+    registry=$(jq \
+      --arg name "$skill_name" \
+      --arg path "$skill_dir/SKILL.md" \
+      '.skills += [{name: $name, path: $path}]' \
+      <<< "$registry")
+  fi
+done
+
+# Write registry
+echo "$registry" | jq '.' > "$REGISTRY_FILE"
+echo "✓ Registry generated: $REGISTRY_FILE"
+
+# Copy skills to dist (for now, just reference the source)
+cp -r "$SKILLS_DIR" "$DIST_DIR/" 2>/dev/null || true
+
+echo "✓ Installation complete"
+echo ""
+echo "Available skills:"
+jq -r '.skills[] | "  - \(.name)"' "$REGISTRY_FILE"
